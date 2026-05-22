@@ -18,6 +18,20 @@ Makanan ultra-proses (NOVA group 4) berkontribusi pada masalah kesehatan global 
 
 ---
 
+## 👥 Tim Pengembang (Kelompok 13)
+
+Proyek ini dikembangkan oleh **Kelompok 13 - Sains Data ITERA 2026** sebagai bagian dari Tugas Besar Analisis Big Data:
+
+| No | Nama | NIM | Peran / GitHub Username |
+| --- | --- | --- | --- |
+| 1 | **Khairunnisa Maharani** | `123450071` | <br>[@KMoex HZ](https://www.google.com/search?q=https://github.com/KMoex%2520HZ) |
+| 2 | **Fadil Prasetyo A** | `123450048` | <br>[@dillcipher](https://www.google.com/search?q=https://github.com/dillcipher) |
+| 3 | **Muhammad Dzikra** | `123450124` | <br>[@muhammaddzikra](https://www.google.com/search?q=https://github.com/muhammaddzikra) |
+| 4 | **Feby Agelina** | `123450039` | <br>[@Feby Angelina](https://www.google.com/search?q=https://github.com/Feby%2520Angelina) |
+
+---
+
+
 ## 📁 Struktur Repositori
 
 ```
