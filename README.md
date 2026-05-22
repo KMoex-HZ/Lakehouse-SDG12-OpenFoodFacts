@@ -71,7 +71,7 @@ Proyek ini dikembangkan oleh **Kelompok 13 - Sains Data ITERA 2026** sebagai bag
 
 ### 1. Clone repo
 ```bash
-git clone https://github.com/<username>/<repo-name>.git
+git clone https://github.com/KMoex-HZ/Lakehouse-SDG12-OpenFoodFacts.git
 cd <repo-name>
 ```
 
