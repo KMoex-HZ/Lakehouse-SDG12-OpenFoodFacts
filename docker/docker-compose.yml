@@ -1,0 +1,48 @@
+version: '3.8'
+
+networks:
+  spark-net:
+    driver: bridge
+
+services:
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - /root/Tubes_BigData:/home/jovyan/work
+    networks:
+      - spark-net
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: spark-worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_WORKER_MEMORY=4g
+      - SPARK_WORKER_CORES=2
+    volumes:
+      - /root/Tubes_BigData:/home/jovyan/work
+    networks:
+      - spark-net
+
+  jupyter:
+    image: quay.io/jupyter/pyspark-notebook:spark-3.5.1
+    container_name: spark-jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - PYSPARK_SUBMIT_ARGS=--packages io.delta:delta-spark_2.12:3.1.0 --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog pyspark-shell
+    volumes:
+      - /root/Tubes_BigData:/home/jovyan/work
+    depends_on:
+      - spark-master
+    networks:
+      - spark-net
