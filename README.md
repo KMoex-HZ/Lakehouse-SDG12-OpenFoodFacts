@@ -86,7 +86,7 @@ cd Lakehouse-SDG12-OpenFoodFacts
 ```
 
 ### 2. Download dataset
-Download `food.parquet` (~7GB) dari [HuggingFace](https://huggingface.co/datasets/openfoodfacts/product-database) dan taruh di root folder repo.
+Download `food.parquet` (~7GB) dari [HuggingFace](https://huggingface.co/datasets/openfoodfacts/product-database) dan taruh di folder root repo.
 
 ### 3. Jalankan Spark cluster
 ```bash
@@ -109,13 +109,13 @@ http://localhost:8888/?token=<token>
 01_bronze.ipynb → 02_silver.ipynb → 03_gold.ipynb → 04_ml.ipynb
 ```
 
-> **Catatan hardware:** Bronze Layer dijalankan dalam mode `local[2]` karena keterbatasan RAM. Disarankan minimal 16GB RAM untuk cluster mode penuh.
+> **Catatan hardware:** Semua layer dijalankan dalam mode `local[2]` karena keterbatasan RAM (7.6GB). Disarankan minimal 16GB RAM untuk cluster mode penuh.
 
 ---
 
 ## 📈 Status Pipeline
 
-### EDA
+### EDA ✅
 - [x] Schema inspection (111 kolom)
 - [x] Total dataset: 4.487.169 produk
 - [x] Missing value analysis — `nova_group` hanya 24.9% terisi
@@ -129,10 +129,13 @@ http://localhost:8888/?token=<token>
 - [x] 4.487.169 baris teringesti, 112 kolom (111 + ingestion_timestamp)
 - [x] Throughput: **12.365 baris/detik**
 
-### Silver Layer 🔄
-- [ ] Filter `nova_group IS NOT NULL`
-- [ ] UNNEST `nutriments` → kolom flat
-- [ ] Cleaning, encoding, feature engineering
+### Silver Layer ✅
+- [x] Filter `nova_group IS NOT NULL` → 1.119.410 baris
+- [x] UNNEST `nutriments` → kolom flat (energy, fat, sugars, proteins, salt)
+- [x] Cleaning: missing values → median (numerik), 'unknown' (teks)
+- [x] Encoding: `nutriscore_grade` A→1..E→5
+- [x] Feature engineering: `additives_count`, `has_palm_oil`, `is_vegan`, `is_vegetarian`
+- [x] Throughput: **5.895 baris/detik**
 
 ### Gold Layer ⏳
 - [ ] Agregasi nutrisi per kategori & negara
@@ -153,7 +156,8 @@ http://localhost:8888/?token=<token>
 |-------|--------|--------|-------|
 | Bronze | Baris teringesti | 4.487.169 | ✅ 4.487.169 |
 | Bronze | Throughput | dicatat | ✅ 12.365 baris/dtk |
-| Silver | Baris setelah filter | ~1.1 juta | — |
+| Silver | Baris setelah filter | ~1.1 juta | ✅ 1.119.410 |
+| Silver | Null di fitur utama | = 0 | ✅ 0 semua |
 | Gold | Tabel agregasi tersedia | ✅ | — |
 | ML | F1-score macro | ≥ 80% | — |
 | Benchmark | Throughput Spark | ≥ 50.000 baris/dtk | — |
