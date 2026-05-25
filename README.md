@@ -6,13 +6,14 @@
 
 ## 📌 Latar Belakang
 
-Makanan ultra-proses (NOVA group 4) berkontribusi pada masalah kesehatan global sekaligus meninggalkan jejak lingkungan yang signifikan. Proyek ini membangun **pipeline big data berbasis arsitektur Lakehouse** menggunakan Apache Spark dan Delta Lake untuk memproses dan menganalisis dataset Open Food Facts, serta membangun model klasifikasi NOVA group.
+Makanan ultra-proses (NOVA group 4) berkontribusi pada masalah kesehatan global sekaligus meninggalkan jejak lingkungan yang signifikan. Proyek ini membangun **pipeline big data berbasis arsitektur Lakehouse** menggunakan Apache Spark dan Delta Lake untuk memproses dan menganalisis dataset Open Food Facts, serta membangun model klasifikasi NOVA group yang di-orchestrate menggunakan Apache Airflow.
 
 ---
 
 ## 🎯 Tujuan
 
 - Membangun pipeline big data berbasis Medallion Architecture (Bronze → Silver → Gold)
+- Mengorchestrasi pipeline menggunakan Apache Airflow DAG
 - Membangun model klasifikasi NOVA group (1–4) dengan target F1-score ≥ 80%
 - Menganalisis korelasi antara tingkat pemrosesan dengan dampak lingkungan (Eco-Score)
 - Membandingkan performa pipeline Spark vs pipeline pandas sekuensial
@@ -38,6 +39,7 @@ Proyek ini dikembangkan oleh **Kelompok 13 - Sains Data ITERA 2026** sebagai bag
 |----------|-------|
 | Apache Spark | 3.5.1 |
 | Delta Lake | 3.1.0 |
+| Apache Airflow | 2.9.1 |
 | PySpark Notebook | spark-3.5.1 |
 | Docker | — |
 | Python | 3.11 |
@@ -54,8 +56,15 @@ Lakehouse-SDG12-OpenFoodFacts/
 │   ├── 03_gold.ipynb         # Gold Layer — agregasi bisnis
 │   ├── 04_ml.ipynb           # Model ML — klasifikasi NOVA group
 │   └── 05_benchmark.ipynb    # Benchmark Spark vs pandas
+├── scripts/
+│   ├── bronze_layer.py       # Script Bronze Layer untuk Airflow
+│   ├── silver_layer.py       # Script Silver Layer untuk Airflow
+│   ├── gold_layer.py         # Script Gold Layer untuk Airflow
+│   └── ml_layer.py           # Script ML untuk Airflow
+├── dags/
+│   └── lakehouse_dag.py      # Airflow DAG — orchestrasi pipeline
 ├── docker/
-│   └── docker-compose.yml    # Konfigurasi Spark cluster + Jupyter
+│   └── docker-compose.yml    # Konfigurasi Spark + Airflow + Jupyter
 ├── eda.ipynb                  # Exploratory Data Analysis
 ├── environment.yml            # Conda environment (untuk EDA)
 ├── README.md
@@ -88,28 +97,42 @@ cd Lakehouse-SDG12-OpenFoodFacts
 ### 2. Download dataset
 Download `food.parquet` (~7GB) dari [HuggingFace](https://huggingface.co/datasets/openfoodfacts/product-database) dan taruh di folder root repo.
 
-### 3. Jalankan Spark cluster
+### 3. Jalankan semua service
 ```bash
 cd docker
 docker compose up -d
 ```
 
-### 4. Ambil token Jupyter
+### 4. Jalankan pipeline via Airflow
+Buka Airflow UI di browser:
+```
+http://localhost:8090
+```
+Login: **admin / admin**, lalu trigger DAG `lakehouse_sdg12_pipeline`.
+
+### 5. (Opsional) Eksplorasi via Jupyter
+Ambil token Jupyter:
 ```bash
 docker logs spark-jupyter 2>&1 | grep token
 ```
-
-### 5. Buka Jupyter di browser
-```
-http://localhost:8888/?token=<token>
-```
-
-### 6. Jalankan notebook secara berurutan
-```
-01_bronze.ipynb → 02_silver.ipynb → 03_gold.ipynb → 04_ml.ipynb → 05_benchmark.ipynb
-```
+Buka: `http://localhost:8888/?token=<token>`
 
 > **Catatan hardware:** Semua layer dijalankan dalam mode `local[2]` karena keterbatasan RAM (7.6GB). Disarankan minimal 16GB RAM untuk cluster mode penuh.
+
+---
+
+## 🔄 Arsitektur Pipeline (Airflow DAG)
+
+```
+bronze_layer → silver_layer → gold_layer → ml_layer
+```
+
+| Task | Deskripsi | Durasi |
+|------|-----------|--------|
+| bronze_layer | Ingestion food.parquet → Delta Lake | ~6 menit |
+| silver_layer | Cleaning, UNNEST, feature engineering | ~3 menit |
+| gold_layer | Agregasi bisnis per kategori & negara | ~1 menit |
+| ml_layer | Train Random Forest, evaluasi F1-score | ~2 menit |
 
 ---
 
@@ -127,7 +150,7 @@ http://localhost:8888/?token=<token>
 ### Bronze Layer ✅
 - [x] Ingestion `food.parquet` → Delta Lake
 - [x] 4.487.169 baris teringesti, 112 kolom (111 + ingestion_timestamp)
-- [x] Throughput: **12.365 baris/detik**
+- [x] Throughput: **12.228 baris/detik**
 
 ### Silver Layer ✅
 - [x] Filter `nova_group IS NOT NULL` → 1.119.410 baris
@@ -138,10 +161,9 @@ http://localhost:8888/?token=<token>
 - [x] Throughput: **5.895 baris/detik**
 
 ### Gold Layer ✅
-- [x] Agregasi nutrisi per kategori → 10.172 kategori
+- [x] Agregasi nutrisi per kategori → 10.171 kategori
 - [x] Agregasi nutrisi per negara → 201 negara
 - [x] Distribusi Eco-Score & NOVA global
-- [x] Throughput: **90.275 baris/detik**
 
 ### Model ML ✅
 - [x] Random Forest klasifikasi NOVA group (50 trees, max depth 10)
@@ -155,6 +177,11 @@ http://localhost:8888/?token=<token>
 - [x] Pandas lebih cepat di single-node (0.1 dtk vs 0.8 dtk)
 - [x] Spark unggul skalabilitas — pandas OOM di full dataset 7GB
 
+### Airflow Orchestration ✅
+- [x] DAG `lakehouse_sdg12_pipeline` berhasil dijalankan
+- [x] Semua 4 task sukses: bronze → silver → gold → ml
+- [x] Hasil konsisten dengan eksekusi manual via notebook
+
 ---
 
 ## 🎯 Metrik Keberhasilan
@@ -162,12 +189,13 @@ http://localhost:8888/?token=<token>
 | Layer | Metrik | Target | Hasil |
 |-------|--------|--------|-------|
 | Bronze | Baris teringesti | 4.487.169 | ✅ 4.487.169 |
-| Bronze | Throughput | dicatat | ✅ 12.365 baris/dtk |
+| Bronze | Throughput | dicatat | ✅ 12.228 baris/dtk |
 | Silver | Baris setelah filter | ~1.1 juta | ✅ 1.119.410 |
 | Silver | Null di fitur utama | = 0 | ✅ 0 semua |
-| Gold | Tabel agregasi tersedia | ✅ | ✅ 10.172 kategori, 201 negara |
+| Gold | Tabel agregasi tersedia | ✅ | ✅ 10.171 kategori, 201 negara |
 | ML | F1-score macro | ≥ 80% | ✅ 82.13% |
-| Benchmark | Skalabilitas full dataset | Spark bisa | ✅ Spark 362.9 dtk, pandas OOM |
+| Airflow | Pipeline end-to-end | sukses | ✅ semua task hijau |
+| Benchmark | Skalabilitas full dataset | Spark bisa | ✅ Spark 367 dtk, pandas OOM |
 
 ---
 
