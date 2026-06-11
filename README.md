@@ -124,7 +124,7 @@ Buka: `http://localhost:8888/?token=<token>`
 ## 🔄 Arsitektur Pipeline (Airflow DAG)
 
 <div align="center">
-  <img src="assets/architecturediagram.png" alt="Diagram Arsitektur Pipeline Lakehouse" width="80%">
+  <img src="architecturediagram.png" alt="Diagram Arsitektur Pipeline Lakehouse" width="80%">
 </div>
 
 ```
